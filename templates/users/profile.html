@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}个人中心 - 校园活动平台{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">个人中心</h1>
+    <p class="page-subtitle">查看和更新您的个人信息</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1.6fr;gap:1.5rem;">
+  <div class="card" style="display:flex;flex-direction:column;gap:1.2rem;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="profile-avatar">{{ user.real_name|first|default:user.username|first|upper }}</div>
+      <div>
+        <div style="font-weight:700;font-size:1.1rem;">{{ user.real_name|default:user.username }}</div>
+        <div style="font-size:.82rem;color:var(--muted);">{{ user.get_role_display }}</div>
+      </div>
+    </div>
+    <div class="profile-info-grid" style="margin-top:0;">
+      <div class="profile-field">
+        <div class="profile-field-label">学号/工号</div>
+        <div class="profile-field-value">{{ user.student_id|default:"未填写" }}</div>
+      </div>
+      <div class="profile-field">
+        <div class="profile-field-label">手机号</div>
+        <div class="profile-field-value">{{ user.phone|default:"未填写" }}</div>
+      </div>
+      <div class="profile-field">
+        <div class="profile-field-label">邮箱</div>
+        <div class="profile-field-value">{{ user.email|default:"未填写" }}</div>
+      </div>
+      <div class="profile-field">
+        <div class="profile-field-label">注册时间</div>
+        <div class="profile-field-value">{{ user.date_joined|date:"Y-m-d" }}</div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:1rem;">
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:.8rem;">快捷操作</p>
+      <div style="display:flex;flex-direction:column;gap:.6rem;">
+        {% if user.role == 'organizer' or user.role == 'admin' or user.is_superuser %}
+          <a href="{% url 'activities:create' %}" class="btn btn-primary btn-sm">发布新活动</a>
+          <a href="{% url 'activities:organized_list' %}" class="btn btn-outline btn-sm">管理我的活动</a>
+        {% endif %}
+        {% if user.role == 'admin' or user.is_superuser %}
+          <a href="{% url 'users:admin_dashboard' %}" class="btn btn-outline btn-sm">数据统计后台</a>
+        {% endif %}
+        <a href="/" class="btn btn-outline btn-sm">浏览活动广场</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-family:var(--font-display);margin-bottom:1.5rem;">编辑个人信息</h3>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label>真实姓名</label>
+          {{ form.real_name }}
+        </div>
+        <div class="form-group">
+          <label>学号/工号</label>
+          {{ form.student_id }}
+        </div>
+        <div class="form-group">
+          <label>手机号</label>
+          {{ form.phone }}
+        </div>
+        <div class="form-group">
+          <label>邮箱</label>
+          {{ form.email }}
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">保存修改</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}活动广场 - 校园活动平台{% endblock %}
+{% block content %}
+<div class="hero">
+  <div class="hero-title">校园活动广场</div>
+  <div class="hero-sub">发现精彩校园活动，报名参与，扫码签到</div>
+</div>
+
+<form method="get" class="search-bar">
+  <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="搜索活动名称、地点...">
+  <select name="status" class="form-control">
+    <option value="">全部状态</option>
+    <option value="published" {% if status_filter == 'published' %}selected{% endif %}>已发布</option>
+    <option value="ongoing" {% if status_filter == 'ongoing' %}selected{% endif %}>进行中</option>
+    <option value="finished" {% if status_filter == 'finished' %}selected{% endif %}>已结束</option>
+    <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>已取消</option>
+  </select>
+  <button type="submit" class="btn btn-primary">搜索</button>
+  {% if q or status_filter %}<a href="/" class="btn btn-outline">重置</a>{% endif %}
+</form>
+
+{% if activities %}
+<div class="activity-grid">
+  {% for activity in activities %}
+  <div class="activity-card" style="animation-delay:{{ forloop.counter0 }}00ms">
+    {% if activity.cover %}
+    <div style="height:160px;overflow:hidden;">
+      <img src="{{ activity.cover.url }}" alt="{{ activity.title }}" style="width:100%;height:160px;object-fit:cover;display:block;transition:transform .3s ease;">
+    </div>
+    {% else %}
+    <div class="activity-card-banner"></div>
+    {% endif %}
+    <div class="activity-card-body">
+      <a href="{% url 'activities:detail' activity.pk %}" class="activity-card-title">{{ activity.title }}</a>
+      <div class="activity-card-meta">
+        <span><i class="bi bi-geo-alt"></i> {{ activity.location }}</span>
+        <span><i class="bi bi-calendar3"></i> {{ activity.start_time|date:"m月d日 H:i" }}</span>
+      </div>
+      <div style="font-size:.83rem;color:var(--muted);margin-top:.3rem;">{{ activity.description|truncatechars:60 }}</div>
+    </div>
+    <div class="activity-card-footer">
+      <span class="badge badge-{{ activity.status }}">{{ activity.get_status_display }}</span>
+      <span style="font-size:.82rem;color:var(--muted);">{{ activity.current_participants }}{% if activity.max_participants > 0 %}/{{ activity.max_participants }}{% endif %} 人</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if is_paginated %}
+<div class="pagination">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status_filter }}">&laquo;</a>
+  {% endif %}
+  {% for num in paginator.page_range %}
+    {% if page_obj.number == num %}
+      <span class="current">{{ num }}</span>
+    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+      <a href="?page={{ num }}&q={{ q }}&status={{ status_filter }}">{{ num }}</a>
+    {% endif %}
+  {% endfor %}
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status_filter }}">&raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card" style="text-align:center;padding:3rem;">
+  <div style="font-size:3rem;margin-bottom:1rem;"><i class="bi bi-inbox" style="color:var(--muted);"></i></div>
+  <h3 style="color:var(--muted);">暂无活动</h3>
+  <p style="color:var(--muted);margin-top:.5rem;">{% if q %}未找到相关活动，{% endif %}敬请期待！</p>
+</div>
+{% endif %}
+{% endblock %}

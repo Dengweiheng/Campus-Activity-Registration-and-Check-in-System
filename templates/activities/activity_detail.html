@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}{{ activity.title }} - 校园活动平台{% endblock %}
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:start;">
+  <div>
+    <div class="card">
+      {% if activity.cover %}
+      <div style="margin:-2rem -2rem 1.5rem -2rem;border-radius:var(--radius) var(--radius) 0 0;overflow:hidden;max-height:320px;">
+        <img src="{{ activity.cover.url }}" alt="{{ activity.title }}" style="width:100%;height:320px;object-fit:cover;display:block;">
+      </div>
+      {% endif %}
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+        <div>
+          <span class="badge badge-{{ activity.status }}" style="margin-bottom:.8rem;">{{ activity.get_status_display }}</span>
+          <h1 style="font-family:var(--font-display);font-size:1.8rem;">{{ activity.title }}</h1>
+        </div>
+        {% if user == activity.organizer or user.is_superuser %}
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
+          <a href="{% url 'activities:edit' activity.pk %}" class="btn btn-outline btn-sm"><i class="bi bi-pencil"></i> 编辑</a>
+          <a href="{% url 'activities:stats' activity.pk %}" class="btn btn-outline btn-sm"><i class="bi bi-bar-chart"></i> 统计</a>
+          <a href="{% url 'activities:generate_qr' activity.pk %}" class="btn btn-primary btn-sm"><i class="bi bi-qr-code"></i> 生成二维码</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="detail-meta">
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">活动地点</span>
+          <span class="detail-meta-value">{{ activity.location }}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">开始时间</span>
+          <span class="detail-meta-value">{{ activity.start_time|date:"Y年m月d日 H:i" }}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">结束时间</span>
+          <span class="detail-meta-value">{{ activity.end_time|date:"Y年m月d日 H:i" }}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">报名截止</span>
+          <span class="detail-meta-value">{{ activity.reg_deadline|date:"Y年m月d日 H:i" }}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">人数限制</span>
+          <span class="detail-meta-value">{{ activity.current_participants }} / {% if activity.max_participants == 0 %}不限{% else %}{{ activity.max_participants }}{% endif %}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">已签到</span>
+          <span class="detail-meta-value">{{ checkin_count }} 人</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">发布者</span>
+          <span class="detail-meta-value">{{ activity.organizer.real_name|default:activity.organizer.username }}</span>
+        </div>
+      </div>
+
+      {% if activity.description %}
+      <div style="border-top:1px solid var(--border);padding-top:1.2rem;margin-top:.5rem;">
+        <h3 style="font-size:.9rem;color:var(--muted);margin-bottom:.8rem;text-transform:uppercase;letter-spacing:.06em;">活动简介</h3>
+        <p style="line-height:1.9;color:var(--ink-soft);">{{ activity.description }}</p>
+      </div>
+      {% endif %}
+
+      <div style="border-top:1px solid var(--border);padding-top:1.2rem;margin-top:1.2rem;display:flex;gap:.8rem;flex-wrap:wrap;align-items:center;">
+        {% if user.is_authenticated %}
+          {% if is_registered %}
+            {% if has_checkin %}
+              <span class="btn btn-success" style="cursor:default;"><i class="bi bi-check-circle"></i> 已签到</span>
+            {% else %}
+              <!-- 签到按钮：点击展开上传表单 -->
+              <button type="button" class="btn btn-accent btn-lg" onclick="document.getElementById('checkin-form').style.display='block';this.style.display='none';">
+                <i class="bi bi-qr-code-scan"></i> 签到
+              </button>
+              <form method="post" action="{% url 'activities:cancel' activity.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline" onclick="return confirm('确定要取消报名吗？');">取消报名</button>
+              </form>
+            {% endif %}
+          {% else %}
+            {% if activity.status == 'published' %}
+              <form method="post" action="{% url 'activities:register' activity.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-accent btn-lg">立即报名</button>
+              </form>
+            {% endif %}
+          {% endif %}
+        {% else %}
+          <a href="{% url 'users:login' %}?next={{ request.path }}" class="btn btn-accent btn-lg">登录后报名</a>
+        {% endif %}
+
+        {% if user == activity.organizer or user.is_superuser or user.role == 'admin' %}
+          <a href="{% url 'activities:export_csv' activity.pk %}" class="btn btn-outline btn-sm"><i class="bi bi-download"></i> 导出CSV</a>
+        {% endif %}
+      </div>
+
+      <!-- 上传二维码签到表单（默认隐藏） -->
+      {% if is_registered and not has_checkin %}
+      <div id="checkin-form" style="display:none;margin-top:1.2rem;border-top:1px solid var(--border);padding-top:1.2rem;">
+        <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem;"><i class="bi bi-upload"></i> 上传签到二维码</h3>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;">请拍摄或截图活动现场的签到二维码，上传后系统自动验证完成签到。</p>
+        <form method="post" action="{% url 'activities:upload_checkin' activity.pk %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div style="display:flex;gap:.8rem;align-items:flex-end;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px;">
+              <input type="file" name="qr_image" accept="image/*" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> 确认签到</button>
+            <button type="button" class="btn btn-outline" onclick="document.getElementById('checkin-form').style.display='none';document.querySelector('.btn-accent').style.display='';">取消</button>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:1.2rem;">
+    <!-- 组织者/管理员：显示二维码供展示 -->
+    {% if activity.qr_code %}
+    {% if user == activity.organizer or user.is_superuser or user.role == 'admin' %}
+    <div class="card card-sm">
+      <h3 style="font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem;">签到二维码</h3>
+      <div class="qr-box">
+        <img src="{{ activity.qr_code.url }}" alt="签到二维码">
+        <p style="font-size:.78rem;color:var(--muted);margin-top:.8rem;">展示给学生扫码或上传</p>
+      </div>
+      <a href="{{ activity.qr_code.url }}" download class="btn btn-outline btn-sm" style="width:100%;margin-top:.8rem;justify-content:center;"><i class="bi bi-download"></i> 下载二维码</a>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <div class="card card-sm">
+      <h3 style="font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.8rem;">活动信息</h3>
+      <div style="font-size:.85rem;color:var(--ink-soft);line-height:2;">
+        <div>创建时间：{{ activity.created_at|date:"Y-m-d" }}</div>
+        <div>更新时间：{{ activity.updated_at|date:"Y-m-d" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

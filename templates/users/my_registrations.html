@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}我的报名 - 校园活动平台{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">我的报名记录</h1>
+    <p class="page-subtitle">查看您的所有活动报名和签到状态</p>
+  </div>
+  <a href="/activities/" class="btn btn-outline"><i class="bi bi-grid-3x3-gap"></i> 浏览更多活动</a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>活动名称</th>
+          <th>活动时间</th>
+          <th>地点</th>
+          <th>报名时间</th>
+          <th>报名状态</th>
+          <th>签到状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for reg in registrations %}
+        <tr>
+          <td><a href="{% url 'activities:detail' reg.activity.pk %}" style="color:var(--accent2);text-decoration:none;font-weight:500;">{{ reg.activity.title }}</a></td>
+          <td>{{ reg.activity.start_time|date:"m-d H:i" }}</td>
+          <td>{{ reg.activity.location }}</td>
+          <td>{{ reg.registration_time|date:"m-d H:i" }}</td>
+          <td>
+            <span class="badge {% if reg.status == 'registered' %}badge-published{% else %}badge-cancelled{% endif %}">
+              {{ reg.get_status_display }}
+            </span>
+          </td>
+          <td>
+            {% if reg.status == 'registered' %}
+              {% with checkin=reg.checkin %}
+              {% if checkin %}
+                <span class="badge {% if checkin.status == 'late' %}badge-draft{% else %}badge-ongoing{% endif %}">
+                  {{ checkin.get_status_display }} {{ checkin.check_in_time|date:"H:i" }}
+                </span>
+              {% else %}
+                <span style="color:var(--muted);font-size:.82rem;">未签到</span>
+              {% endif %}
+              {% endwith %}
+            {% else %}
+              <span style="color:var(--muted);font-size:.82rem;">-</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'activities:detail' reg.activity.pk %}" class="btn btn-outline btn-sm">详情</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem;">您还没有报名任何活动，<a href="/activities/" style="color:var(--accent2);">去看看</a></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

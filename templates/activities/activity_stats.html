@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block title %}报名签到统计 - {{ activity.title }}{% endblock %}
+{% block extra_css %}
+<style>
+.charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin:1.5rem 0; }
+.chart-box { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:1.5rem; }
+@media(max-width:768px){ .charts-grid { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ activity.title }}</h1>
+    <p class="page-subtitle">报名与签到数据统计</p>
+  </div>
+  <div style="display:flex;gap:.8rem;">
+    <a href="{% url 'activities:export_csv' activity.pk %}" class="btn btn-outline btn-sm">导出 CSV</a>
+    <a href="{% url 'activities:export_excel' activity.pk %}" class="btn btn-outline btn-sm">导出 Excel</a>
+    <a href="{% url 'activities:detail' activity.pk %}" class="btn btn-outline btn-sm">返回详情</a>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-card-num" data-target="{{ reg_count }}">0</div>
+    <div class="stat-card-label">有效报名人数</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-num" data-target="{{ checkin_count }}">0</div>
+    <div class="stat-card-label">已签到人数</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-num" data-target="{{ no_show }}">0</div>
+    <div class="stat-card-label">未签到人数</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-num" data-target="{{ cancel_count }}">0</div>
+    <div class="stat-card-label">取消报名人数</div>
+  </div>
+</div>
+
+<div class="charts-grid">
+  <div class="chart-box">
+    <h3 style="font-size:1rem;margin-bottom:1rem;">签到情况概览</h3>
+    <canvas id="chartPie" height="200"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3 style="font-size:1rem;margin-bottom:1rem;">正常 vs 迟到</h3>
+    <canvas id="chartBar" height="200"></canvas>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="font-family:var(--font-display);margin-bottom:1.2rem;">报名人员名单</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>姓名</th>
+          <th>学号/工号</th>
+          <th>手机号</th>
+          <th>报名时间</th>
+          <th>是否签到</th>
+          <th>签到时间</th>
+          <th>签到状态</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for reg in registrations %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ reg.user.real_name|default:reg.user.username }}</td>
+          <td>{{ reg.user.student_id|default:"-" }}</td>
+          <td>{{ reg.user.phone|default:"-" }}</td>
+          <td>{{ reg.registration_time|date:"m-d H:i" }}</td>
+          {% with checkin=reg.checkin %}
+          <td>
+            {% if checkin %}
+              <span style="color:var(--success);font-weight:600;">已签到</span>
+            {% else %}
+              <span style="color:var(--muted);">未签到</span>
+            {% endif %}
+          </td>
+          <td>{% if checkin %}{{ checkin.check_in_time|date:"m-d H:i" }}{% else %}-{% endif %}</td>
+          <td>
+            {% if checkin %}
+              <span class="badge {% if checkin.status == 'late' %}badge-cancelled{% else %}badge-ongoing{% endif %}">{{ checkin.get_status_display }}</span>
+            {% else %}-{% endif %}
+          </td>
+          {% endwith %}
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center;color:var(--muted);">暂无报名记录</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="/static/js/chart.umd.js"></script>
+<script>
+new Chart(document.getElementById('chartPie'), {
+  type: 'pie',
+  data: {
+    labels: ['已签到', '未签到', '取消报名'],
+    datasets: [{ data: [{{ checkin_count }}, {{ no_show }}, {{ cancel_count }}], backgroundColor: ['#0d9e72','#0f3460','#e53170'] }]
+  },
+  options: { plugins: { legend: { position: 'bottom' } } }
+});
+new Chart(document.getElementById('chartBar'), {
+  type: 'bar',
+  data: {
+    labels: ['正常签到', '迟到签到'],
+    datasets: [{ data: [{{ normal_count }}, {{ late_count }}], backgroundColor: ['#0f3460','#e8a838'], borderRadius: 6 }]
+  },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+</script>
+{% endblock %}

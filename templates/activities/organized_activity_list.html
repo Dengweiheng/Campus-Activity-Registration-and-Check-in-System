@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}管理活动 - 校园活动平台{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if request.user.role == 'admin' or request.user.is_superuser %}全部活动管理{% else %}管理我的活动{% endif %}</h1>
+    <p class="page-subtitle">{% if request.user.role == 'admin' or request.user.is_superuser %}管理员视图：可管理平台所有活动{% else %}管理您发布的所有活动，包括草稿{% endif %}</p>
+  </div>
+  <a href="{% url 'activities:create' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> 发布新活动</a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>活动名称</th>
+          {% if request.user.role == 'admin' or request.user.is_superuser %}<th>组织者</th>{% endif %}
+          <th>地点</th>
+          <th>开始时间</th>
+          <th>报名截止</th>
+          <th>报名/限制</th>
+          <th>状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for activity in activities %}
+        <tr>
+          <td><a href="{% url 'activities:detail' activity.pk %}" style="color:var(--accent2);text-decoration:none;font-weight:500;">{{ activity.title }}</a></td>
+          {% if request.user.role == 'admin' or request.user.is_superuser %}
+          <td>{{ activity.organizer.real_name|default:activity.organizer.username }}</td>
+          {% endif %}
+          <td>{{ activity.location }}</td>
+          <td>{{ activity.start_time|date:"m-d H:i" }}</td>
+          <td>{{ activity.reg_deadline|date:"m-d H:i" }}</td>
+          <td>{{ activity.current_participants }} / {% if activity.max_participants == 0 %}不限{% else %}{{ activity.max_participants }}{% endif %}</td>
+          <td><span class="badge badge-{{ activity.status }}">{{ activity.get_status_display }}</span></td>
+          <td>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+              <a href="{% url 'activities:edit' activity.pk %}" class="btn btn-outline btn-sm"><i class="bi bi-pencil"></i> 编辑</a>
+              <a href="{% url 'activities:stats' activity.pk %}" class="btn btn-outline btn-sm"><i class="bi bi-bar-chart"></i> 统计</a>
+              <a href="{% url 'activities:generate_qr' activity.pk %}" class="btn btn-outline btn-sm"><i class="bi bi-qr-code"></i> 二维码</a>
+              <a href="{% url 'activities:delete' activity.pk %}" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i> 删除</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem;">您还没有发布任何活动，<a href="{% url 'activities:create' %}" style="color:var(--accent2);">立即发布</a></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}数据统计后台 - 校园活动平台{% endblock %}
+{% block extra_css %}
+<style>
+.chart-box { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.5rem; }
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+.charts-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+@media(max-width:900px){ .charts-grid,.charts-grid-3 { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">数据统计后台</h1>
+    <p class="page-subtitle">全平台活动报名与签到数据概览</p>
+  </div>
+  <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
+    <a href="{% url 'users:user_management' %}" class="btn btn-primary"><i class="bi bi-people"></i> 用户管理</a>
+    <a href="{% url 'users:checkin_monitor' %}" class="btn btn-outline"><i class="bi bi-qr-code-scan"></i> 签到监控</a>
+    <a href="{% url 'users:export_dashboard_csv' %}" class="btn btn-outline btn-sm"><i class="bi bi-filetype-csv"></i> 导出CSV</a>
+    <a href="{% url 'users:export_dashboard_excel' %}" class="btn btn-outline btn-sm"><i class="bi bi-file-earmark-excel"></i> 导出Excel</a>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-card-num" data-target="{{ total_users }}">0</div>
+    <div class="stat-card-label">注册用户总数</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-num" data-target="{{ total_activities }}">0</div>
+    <div class="stat-card-label">活动总数</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-num" data-target="{{ total_registrations }}">0</div>
+    <div class="stat-card-label">有效报名总数</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-num" data-target="{{ total_checkins }}">0</div>
+    <div class="stat-card-label">签到总次数</div>
+  </div>
+</div>
+
+<div class="charts-grid">
+  <div class="chart-box">
+    <h3 style="margin-bottom:1rem;font-size:1rem;"><i class="bi bi-graph-up"></i> 近7天每日报名趋势（折线图）</h3>
+    <canvas id="chartDaily" height="200"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3 style="margin-bottom:1rem;font-size:1rem;"><i class="bi bi-pie-chart"></i> 用户角色分布（饼图）</h3>
+    <canvas id="chartRole" height="200"></canvas>
+  </div>
+</div>
+
+<div class="charts-grid" style="margin-top:1.5rem;">
+  <div class="chart-box">
+    <h3 style="margin-bottom:1rem;font-size:1rem;"><i class="bi bi-bar-chart"></i> 各活动报名人数（柱状图）</h3>
+    <canvas id="chartActivityBar" height="220"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3 style="margin-bottom:1rem;font-size:1rem;"><i class="bi bi-pie-chart-fill"></i> 签到状态分布（饼图）</h3>
+    <canvas id="chartCheckinStatus" height="220"></canvas>
+  </div>
+</div>
+
+<div class="card" style="margin-top:1.5rem;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
+    <h3 style="font-family:var(--font-display);">各活动报名情况（最近10条）</h3>
+    <div style="display:flex;gap:.6rem;">
+      <a href="{% url 'users:export_dashboard_csv' %}" class="btn btn-outline btn-sm"><i class="bi bi-download"></i> CSV</a>
+      <a href="{% url 'users:export_dashboard_excel' %}" class="btn btn-outline btn-sm"><i class="bi bi-download"></i> Excel</a>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>活动名称</th><th>组织者</th><th>开始时间</th><th>状态</th><th>报名人数</th><th>操作</th></tr></thead>
+      <tbody>
+        {% for a in activity_stats %}
+        <tr>
+          <td><a href="{% url 'activities:detail' a.pk %}" style="color:var(--accent2);text-decoration:none;font-weight:500;">{{ a.title }}</a></td>
+          <td>{{ a.organizer.real_name|default:a.organizer.username }}</td>
+          <td>{{ a.start_time|date:"Y-m-d H:i" }}</td>
+          <td><span class="badge badge-{{ a.status }}">{{ a.get_status_display }}</span></td>
+          <td>{{ a.reg_count }} / {% if a.max_participants == 0 %}不限{% else %}{{ a.max_participants }}{% endif %}</td>
+          <td>
+            <a href="{% url 'activities:stats' a.pk %}" class="btn btn-outline btn-sm">查看统计</a>
+            <a href="{% url 'activities:edit' a.pk %}" class="btn btn-outline btn-sm">编辑</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:var(--muted);">暂无活动数据</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="/static/js/chart.umd.js"></script>
+<script>
+// 折线图：近7天报名趋势
+const dailyLabels = [{% for d in reg_daily %}'{{ d.day }}',{% endfor %}];
+const dailyData = [{% for d in reg_daily %}{{ d.count }},{% endfor %}];
+new Chart(document.getElementById('chartDaily'), {
+  type: 'line',
+  data: {
+    labels: dailyLabels,
+    datasets: [{
+      label: '报名人数',
+      data: dailyData,
+      borderColor: '#0f3460',
+      backgroundColor: 'rgba(15,52,96,.1)',
+      tension: .4, fill: true,
+      pointBackgroundColor: '#e53170', pointRadius: 5,
+    }]
+  },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+
+// 饼图：用户角色分布
+const roleLabels = [{% for r in role_stats %}'{{ r.role }}',{% endfor %}];
+const roleData = [{% for r in role_stats %}{{ r.count }},{% endfor %}];
+new Chart(document.getElementById('chartRole'), {
+  type: 'doughnut',
+  data: { labels: roleLabels, datasets: [{ data: roleData, backgroundColor: ['#0f3460','#533483','#e53170','#0d9e72'] }] },
+  options: { plugins: { legend: { position: 'bottom' } } }
+});
+
+// 柱状图：各活动报名人数
+const actLabels = [{% for a in activity_stats %}'{{ a.title|truncatechars:10 }}',{% endfor %}];
+const actData = [{% for a in activity_stats %}{{ a.reg_count }},{% endfor %}];
+new Chart(document.getElementById('chartActivityBar'), {
+  type: 'bar',
+  data: {
+    labels: actLabels,
+    datasets: [{ label: '报名人数', data: actData, backgroundColor: '#0f3460', borderRadius: 6 }]
+  },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+
+// 饼图：签到状态
+new Chart(document.getElementById('chartCheckinStatus'), {
+  type: 'pie',
+  data: {
+    labels: ['已签到', '未签到'],
+    datasets: [{ data: [{{ total_checkins }}, Math.max(0, {{ total_registrations }} - {{ total_checkins }})], backgroundColor: ['#0d9e72','#e2e1ea'] }]
+  },
+  options: { plugins: { legend: { position: 'bottom' } } }
+});
+
+// 数字滚动动画
+document.querySelectorAll('.stat-card-num[data-target]').forEach(el => {
+  const target = parseInt(el.dataset.target) || 0;
+  let cur = 0; const step = Math.max(1, Math.ceil(target / 40));
+  const t = setInterval(() => { cur = Math.min(cur + step, target); el.textContent = cur; if (cur >= target) clearInterval(t); }, 30);
+});
+</script>
+{% endblock %}

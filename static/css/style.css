@@ -1,0 +1,122 @@
+:root {
+    --primary-color: #2563eb; /* 纯正专业蓝 */
+    --secondary-color: #1e40af;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --bg-light: #f9fafb;
+    --sidebar-bg: #111827; /* 深灰黑，非紫色 */
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-light);
+    color: #111827;
+    margin: 0;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    height: 100vh;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: var(--sidebar-bg);
+    color: #9ca3af;
+    transition: all 0.3s;
+    z-index: 1000;
+}
+
+.sidebar .nav-link {
+    color: #9ca3af;
+    padding: 12px 20px;
+    margin: 4px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s;
+}
+
+.sidebar .nav-link:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar .nav-link.active {
+    color: #ffffff;
+    background: var(--primary-color);
+}
+
+.sidebar-logo {
+    padding: 25px 20px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 15px;
+}
+
+/* Main Content Area */
+.main-content {
+    margin-left: 250px;
+    padding: 30px;
+    min-height: 100vh;
+}
+
+/* Component Styling */
+.card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 24px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    background-color: var(--secondary-color);
+}
+
+.table thead {
+    background-color: #f3f4f6;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 13px;
+    color: #4b5563;
+    padding: 12px 16px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.table td {
+    padding: 14px 16px;
+    vertical-align: middle;
+}
+
+.avatar-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.badge-status {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.bg-success-subtle { background-color: #d1fae5; }
+.bg-danger-subtle { background-color: #fee2e2; }

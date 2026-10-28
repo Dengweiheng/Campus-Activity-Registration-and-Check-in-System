@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}签到监控 - 校园活动平台{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title"><i class="bi bi-qr-code-scan"></i> 签到记录</h1>
+    <p class="page-subtitle">查看活动签到情况</p>
+  </div>
+  <a href="{% url 'users:admin_dashboard' %}" class="btn btn-outline"><i class="bi bi-arrow-left"></i> 返回后台</a>
+</div>
+
+<div class="card" style="margin-bottom:1.5rem;">
+  <form method="get" style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:center;">
+    <label style="font-weight:500;font-size:.9rem;">筛选活动：</label>
+    <select name="activity" class="form-control" style="max-width:320px;" onchange="this.form.submit()">
+      <option value="">全部活动</option>
+      {% for act in activities %}
+      <option value="{{ act.pk }}" {% if selected_activity == act.pk|stringformat:'s' %}selected{% endif %}>{{ act.title }}</option>
+      {% endfor %}
+    </select>
+    {% if selected_activity %}<a href="{% url 'users:checkin_monitor' %}" class="btn btn-outline btn-sm">清除筛选</a>{% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>签到人</th>
+          <th>学号/工号</th>
+          <th>活动名称</th>
+          <th>签到时间</th>
+          <th>签到状态</th>
+          <th>签到IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in checkins %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ c.registration.user.real_name|default:c.registration.user.username }}</td>
+          <td>{{ c.registration.user.student_id|default:"-" }}</td>
+          <td><a href="{% url 'activities:detail' c.registration.activity.pk %}" style="color:var(--accent2);text-decoration:none;font-weight:500;">{{ c.registration.activity.title|truncatechars:20 }}</a></td>
+          <td>{{ c.check_in_time|date:"Y-m-d H:i:s" }}</td>
+          <td>
+            {% if c.status == 'normal' %}
+              <span class="badge badge-ongoing">正常</span>
+            {% else %}
+              <span class="badge badge-draft">迟到</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.8rem;color:var(--muted);">{{ c.ip_address|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem;">暂无签到记录</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

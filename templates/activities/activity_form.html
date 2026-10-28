@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}{% if form.instance.pk %}编辑活动{% else %}发布活动{% endif %} - 校园活动平台{% endblock %}
+{% block content %}
+<div style="max-width:800px;margin:0 auto;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">{% if form.instance.pk %}编辑活动{% else %}发布新活动{% endif %}</h1>
+    </div>
+    <a href="{% url 'activities:organized_list' %}" class="btn btn-outline">返回列表</a>
+  </div>
+  <div class="card">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>活动标题 <span style="color:var(--danger);">*</span></label>
+        {{ form.title }}
+        {% if form.title.errors %}<div class="form-error">{{ form.title.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="form-group">
+        <label>活动描述</label>
+        {{ form.description }}
+      </div>
+      <div class="form-group">
+        <label>活动封面图片 <span style="color:var(--muted);font-size:.8rem;">（选填，建议宽高比 16:9）</span></label>
+        {% if form.instance.cover %}
+        <div style="margin-bottom:.8rem;">
+          <img id="cover-preview" src="{{ form.instance.cover.url }}" alt="当前封面"
+               style="max-height:180px;border-radius:var(--radius-sm);box-shadow:var(--shadow);display:block;">
+          <p style="font-size:.78rem;color:var(--muted);margin-top:.4rem;">当前封面，重新上传可替换</p>
+        </div>
+        {% else %}
+        <div style="margin-bottom:.8rem;">
+          <img id="cover-preview" src="" alt="" style="max-height:180px;border-radius:var(--radius-sm);box-shadow:var(--shadow);display:none;">
+        </div>
+        {% endif %}
+        {{ form.cover }}
+        {% if form.cover.errors %}<div class="form-error">{{ form.cover.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="form-group">
+        <label>活动地点 <span style="color:var(--danger);">*</span></label>
+        {{ form.location }}
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label>开始时间 <span style="color:var(--danger);">*</span></label>
+          {{ form.start_time }}
+          {% if form.start_time.errors %}<div class="form-error">{{ form.start_time.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>结束时间 <span style="color:var(--danger);">*</span></label>
+          {{ form.end_time }}
+          {% if form.end_time.errors %}<div class="form-error">{{ form.end_time.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>报名截止时间 <span style="color:var(--danger);">*</span></label>
+          {{ form.reg_deadline }}
+          {% if form.reg_deadline.errors %}<div class="form-error">{{ form.reg_deadline.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>最大报名人数</label>
+          {{ form.max_participants }}
+          <div class="form-help">填 0 表示不限制人数</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>活动状态</label>
+        {{ form.status }}
+      </div>
+      <div style="display:flex;gap:1rem;margin-top:1rem;">
+        <button type="submit" class="btn btn-primary">保存活动</button>
+        <a href="{% url 'activities:organized_list' %}" class="btn btn-outline">取消</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function(){
+  var input = document.querySelector('input[type="file"][name="cover"]');
+  var preview = document.getElementById('cover-preview');
+  if(input && preview){
+    input.addEventListener('change', function(){
+      var file = this.files[0];
+      if(file && file.type.startsWith('image/')){
+        var reader = new FileReader();
+        reader.onload = function(e){
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

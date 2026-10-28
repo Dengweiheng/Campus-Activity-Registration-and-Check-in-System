@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}用户管理 - 校园活动平台{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title"><i class="bi bi-people"></i> 用户管理</h1>
+    <p class="page-subtitle">管理平台所有注册用户</p>
+  </div>
+  <a href="{% url 'users:admin_dashboard' %}" class="btn btn-outline"><i class="bi bi-arrow-left"></i> 返回后台</a>
+</div>
+
+<div class="card" style="margin-bottom:1.5rem;">
+  <form method="get" style="display:flex;gap:.8rem;flex-wrap:wrap;">
+    <input type="text" name="q" value="{{ q }}" class="form-control" style="max-width:320px;" placeholder="搜索用户名、姓名、学号...">
+    <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> 搜索</button>
+    {% if q %}<a href="{% url 'users:user_management' %}" class="btn btn-outline">重置</a>{% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>用户名</th>
+          <th>真实姓名</th>
+          <th>学号/工号</th>
+          <th>手机号</th>
+          <th>角色</th>
+          <th>状态</th>
+          <th>注册时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td><strong>{{ u.username }}</strong>{% if u.is_superuser %} <span class="badge badge-published">超管</span>{% endif %}</td>
+          <td>{{ u.real_name|default:"-" }}</td>
+          <td>{{ u.student_id|default:"-" }}</td>
+          <td>{{ u.phone|default:"-" }}</td>
+          <td>
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="user_id" value="{{ u.pk }}">
+              <input type="hidden" name="action" value="set_role">
+              <select name="role" class="form-control" style="padding:.25rem .5rem;font-size:.82rem;display:inline;width:auto;" onchange="this.form.submit()">
+                <option value="student" {% if u.role == 'student' %}selected{% endif %}>学生</option>
+                <option value="organizer" {% if u.role == 'organizer' %}selected{% endif %}>组织者</option>
+                <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>管理员</option>
+              </select>
+            </form>
+          </td>
+          <td>
+            {% if u.is_active %}
+              <span class="badge badge-ongoing"><i class="bi bi-check-circle"></i> 正常</span>
+            {% else %}
+              <span class="badge badge-cancelled"><i class="bi bi-x-circle"></i> 禁用</span>
+            {% endif %}
+          </td>
+          <td>{{ u.date_joined|date:"Y-m-d" }}</td>
+          <td>
+            <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
+              {% if u != request.user %}
+              <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ u.pk }}">
+                <input type="hidden" name="action" value="toggle_active">
+                <button type="submit" class="btn btn-outline btn-sm">
+                  {% if u.is_active %}<i class="bi bi-slash-circle"></i> 禁用{% else %}<i class="bi bi-check-circle"></i> 启用{% endif %}
+                </button>
+              </form>
+              <form method="post" style="display:inline;" onsubmit="return confirm('确定要删除用户 {{ u.username }} 吗？此操作不可撤销！')">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ u.pk }}">
+                <input type="hidden" name="action" value="delete">
+                <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i> 删除</button>
+              </form>
+              {% else %}
+              <span style="color:var(--muted);font-size:.82rem;">（当前用户）</span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem;">未找到用户</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

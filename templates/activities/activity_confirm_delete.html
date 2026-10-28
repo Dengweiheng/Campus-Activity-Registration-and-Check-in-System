@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}确认删除 - 校园活动平台{% endblock %}
+{% block content %}
+<div style="max-width:500px;margin:3rem auto;">
+  <div class="card" style="text-align:center;">
+    <div style="font-size:3rem;margin-bottom:1rem;"><i class="bi bi-exclamation-triangle-fill" style="color:var(--warning);"></i></div>
+    <h2 style="font-family:var(--font-display);margin-bottom:.8rem;">确认删除活动</h2>
+    <p style="color:var(--muted);margin-bottom:1.5rem;">您确定要删除活动「<strong style="color:var(--ink);">{{ object.title }}</strong>」吗？<br>此操作不可撤销，所有报名和签到记录将一并删除。</p>
+    <form method="post" style="display:flex;gap:1rem;justify-content:center;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">确认删除</button>
+      <a href="{% url 'activities:organized_list' %}" class="btn btn-outline">取消</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
